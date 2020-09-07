@@ -5,6 +5,8 @@ const BotPageService = require('../controller/bot-page/bot-page-service')
 const botActionService = require('../controller/bot-action/bot-action-service');
 var router = express.Router();
 const customerService = require('../controller/customers/customers-service');
+const pageService = require('../controller/page/page-Service');
+const customersService = require('../controller/customers/customers-service');
 router.get('/webhook', (req, res) => {
   // Your verify token. Should be a random string.
   let VERIFY_TOKEN = "EAAh8BtLFPpUBAMpJb9mjOHK2AqfexPZC7cUa8EEI64FdE3ozRC4Dm5ahcSu6E9lt8piZBrN8OVfZBde7eQMqBrGi0OoAJSjA2z5MHXC83tdIAPSb0YIYWcRLkNIovYJLMacHngEy4YrIhyFyfPHMKNeV3ZCfSF4MNoVk9EvIxZA49pTZCi6Dm4nna4Fgc0BHwZD"
@@ -54,11 +56,19 @@ router.post('/webhook', async (req, res) => {
         }
 
       }
-      let customers = {
-        page_id: PageId,
-        send_id: senderId
+      let sender = await customersService.getCustomerBySendId(PageId, senderId);
+      if (!sender) {
+        let customers = await getInforCustomers(PageId, senderId);
+        let customer = {
+          page_id: PageId,
+          send_id: senderId,
+          gender: customers.gender,
+          name: customers.name,
+          avatar: customers.profile_pic,
+        }
+        await customerService.CreateNewCustomers(customer)
       }
-      await customerService.CreateNewCustomers(customers)
+
     } else if (body.entry[0].messaging[0].postback) {
       // send postback
     }
@@ -141,6 +151,19 @@ function sendMessage(senderId, message, page_token) {
       console.log(!err)
     }
   })
+}
+async function getInforCustomers(page_id, send_id) {
+  let page = await pageService.getPageByid(page_id);
+  if (page) {
+    let url = `https://graph.facebook.com/${send_id}?fields=first_name,gender,last_name,profile_pic&access_token=${page.access_token}`;
+    const option = {
+      method: 'GET',
+      uri: url,
+    };
+    let result = await request(option);
+    return JSON.parse(result)
+  }
+
 }
 
 module.exports = router;

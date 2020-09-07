@@ -8,11 +8,20 @@ const CreateNewCustomers = async (customer) => {
         return true
     }
 }
-const getCustomerBySendId = async (page_id, send_) => {
-    return await CustomersModel.getCustomerBySendId(page_id, send_)
+const getCustomerBySendId = async (page_id, send_id) => {
+    return await CustomersModel.getCustomerBySendId(page_id, send_id)
 }
 
+const getCustomersByPageId = async (page_id) => {
+    return await CustomersModel.getCustomersByPageId(page_id)
+}
+
+const deleteCustomersById = async (page_id, send_id)=>{
+    return await CustomersModel.deleteCustomersById(page_id, send_id)
+}
 module.exports = {
     CreateNewCustomers: CreateNewCustomers,
-    getCustomerBySendId: getCustomerBySendId
+    getCustomerBySendId: getCustomerBySendId,
+    getCustomersByPageId: getCustomersByPageId ,
+    deleteCustomersById : deleteCustomersById
 }

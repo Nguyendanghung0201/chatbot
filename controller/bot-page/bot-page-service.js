@@ -16,6 +16,7 @@ const deleteChatBotPage = async (page_id, bot_id)=>{
 const getListBotReplyByPage_id = async (page_id)=>{
     return BotPageModel.getListBotReplyByPage_id(page_id)
 }
+
 module.exports = {
     getChatBotPage :getChatBotPage ,
     createBotForPage : createBotForPage,

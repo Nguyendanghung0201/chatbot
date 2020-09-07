@@ -66,6 +66,13 @@ async function handerSubscribed_apps(page_id, access_token) {
 
 }
 
+
+router.get('/test',async (req, res)=>{
+  let result = await getInforCustomers('EAAGKCb3V9UcBADmWAKEocau3GuMzQDZAZAy7SMzDRXgWJHzlFRsuguw3ZAZBTr6Rl7MKyDKysf3Jr4nLjbFyOWEsCdl6wJXc4QD3etHRJmtaZBuClJrNm5bIMZBEi8GCg0AM3KPfwE2NxnRY0EkFdQa9zLMiEM7mWfQofO1ABNbAZDZD','3064385566992160')
+  res.json({
+    result
+  })
+})
 router.post('/subscribed_apps', async (req, res) => {
   let data = req.body;
   if (!data.page_id || !data.access_token) {
@@ -165,4 +172,7 @@ router.get('/test', async (req, res) => {
     'res': resd
   })
 })
+
+
+
 module.exports = router;
