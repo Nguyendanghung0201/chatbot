@@ -31,11 +31,9 @@ router.post('/webhook', async (req, res) => {
   let body = req.body;
   // Checks this is an event from a page subscription
   if (body.object === 'page') {
-    console.log(body)
-    console.log('tin nhăn', body.entry[0].messaging[0].message)
     // Iterates over each entry - there may be multiple if batched
     if (body.entry[0].messaging[0].message) {
-      console.log(body.entry[0].messaging)
+      console.log('tin nhắn đến')
       let PageId = body.entry[0].id;
       let content = body.entry[0].messaging[0].message.text;
       let senderId = body.entry[0].messaging[0].sender.id;
@@ -56,13 +54,16 @@ router.post('/webhook', async (req, res) => {
         }
 
       }
+      console.log(PageId)
+      console.log(senderId)
       let sender = await customersService.getCustomerBySendId(PageId, senderId);
+      console.log(sender)
       if (!sender) {
         let customers = await getInforCustomers(PageId, senderId);
         let customer = {
           page_id: PageId,
           send_id: senderId,
-          gender: customers.gender,
+          gender: customers.gender ? customers.gender : '',
           name: customers.name,
           avatar: customers.profile_pic,
         }
@@ -155,7 +156,7 @@ function sendMessage(senderId, message, page_token) {
 async function getInforCustomers(page_id, send_id) {
   let page = await pageService.getPageByid(page_id);
   if (page) {
-    let url = `https://graph.facebook.com/${send_id}?fields=first_name,gender,last_name,profile_pic&access_token=${page.access_token}`;
+    let url = `https://graph.facebook.com/${send_id}?fields=first_name,gender,name,last_name,profile_pic&access_token=${page.access_token}`;
     const option = {
       method: 'GET',
       uri: url,
@@ -165,5 +166,16 @@ async function getInforCustomers(page_id, send_id) {
   }
 
 }
+
+router.post('/send-all-customers', async(req, res)=>{
+  let user_id = '1262649734';
+  let page_id = req.body.page_id ;
+  let content = req.body.content ;
+
+
+})
+
+
+
 
 module.exports = router;

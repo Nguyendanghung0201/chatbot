@@ -14,5 +14,11 @@ module.exports = {
 
     deleteCustomersById: async (page_id, send_id) => {
         return global.db(table).where('page_id', page_id).andWhere('send_id', send_id).del()
+    },
+    getCustomerByListSendId : async (listSender)=>{
+        return global.db(table).whereIn('send_id',listSender )
+    },
+    getCustomersByPage : async (listpage)=>{
+        return global.db.select().table('customers').innerJoin('page', 'customers.page_id', '=', 'page.page_id').whereIn('page.page_id',listpage)
     }
 }

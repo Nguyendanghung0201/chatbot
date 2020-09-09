@@ -5,6 +5,7 @@ var PageService = require('../controller/page/page-Service');
 const pageService = require('../controller/page/page-Service');
 var BotPageService = require('../controller/bot-page/bot-page-service');
 const customersService = require('../controller/customers/customers-service');
+const request = require('request-promise');
 
 router.get('/list-pages', async (req, res) => {
   let id = '1262649734';
@@ -188,16 +189,16 @@ router.get('/get-list-customers/:id', async (req, res) => {
 router.post('/delete-customers', async (req, res) => {
   let user_id = '1262649734';
   let id = req.params.id;
-  let page_id = req.body.page_id ;
-  let sender_id = req.body.sender_id ;
+  let page_id = req.body.page_id;
+  let sender_id = req.body.sender_id;
   try {
-      let customers = await customersService.deleteCustomersById(page_id, sender_id);
-      res.status(200).json({
-        "status": true,
-        "code": 200,
-        "msg": "success",
-        "data": customers
-      })
+    let customers = await customersService.deleteCustomersById(page_id, sender_id);
+    res.status(200).json({
+      "status": true,
+      "code": 200,
+      "msg": "success",
+      "data": customers
+    })
 
   } catch (e) {
     res.status(200).json({
@@ -207,6 +208,121 @@ router.post('/delete-customers', async (req, res) => {
       "data": []
     })
   }
+})
+
+router.get('/get-list-conversation/:id', async (req, res) => {
+  let user_id = '1262649734';
+  let page_id = req.params.id;
+  let page = await PageService.getPageByid(page_id);
+  let body = {
+    'url': `https://graph.facebook.com/v8.0/${page_id}/conversations?fields=id,name,senders&limit=100`,
+    qs: {
+      'access_token': page.access_token,
+    },
+    method: 'GET',
+
+  };
+
+  let result = await request(body);
+  let customers_Old = JSON.parse(result).data.map((e) => {
+    return {
+      send_id: e.senders.data[0].id,
+      name: e.senders.data[0].name,
+      page_id: page_id
+    }
+  })
+
+  if (customers_Old.length > 0) {
+    let listSender = customers_Old.map(e => {
+      return e.send_id;
+    })
+    let listCusomer = await customersService.getCustomerByListSendId(listSender);
+    if (customers_Old.length > listCusomer.length) {
+      let listsender = listCusomer.map(e => {
+        return e.send_id
+      })
+      let newCustomer = customers_Old.filter((e) => {
+        if (listsender.includes(e.send_id)) {
+          return false
+        } else {
+          return true
+        }
+      })
+
+      if (newCustomer.length) {
+        await customersService.createListCustomer(newCustomer);
+        res.json({
+          "status": true,
+          "code": 200,
+          "msg": "success",
+          "data": ''
+        })
+      } else {
+        res.json({
+          "status": true,
+          "code": 200,
+          "msg": "success",
+          "data": ''
+        })
+      }
+    } else {
+      res.json({
+        "status": true,
+        "code": 200,
+        "msg": "success",
+        "data": ''
+      })
+    }
+  } else {
+    res.json({
+      "status": true,
+      "code": 200,
+      "msg": "success",
+      "data": ''
+    })
+  }
+})
+
+router.get('/send-message', async (req, res) => {
+  let user_id = '1262649734';
+  let content = 'hi!! test api' // req.body.content;
+  let listpage = ['109203267573632']  // req.body.pages;
+  let customers = await customersService.getCustomersByPage(listpage);
+  // send all customers in list pages
+  Promise.all(customers.map(page => {
+    let body = {
+      'url': `https://graph.facebook.com/v2.6/me/messages`,
+      qs: {
+        'access_token': page.access_token,
+      },
+      method: 'POST',
+      json: {
+        recipient: {
+          id: page.send_id
+        },
+        message: {
+          "text": content
+        }
+      }
+    }
+    return request(body)
+  }))
+    .then(values => {
+      res.json({
+        "status": true,
+        "code": 200,
+        "msg": "success",
+        "data": values
+      })
+    }).catch(reason => {
+      res.json({
+        "status": false,
+        "code": 505,
+        "msg": "error",
+        "data": reason
+      })
+    });
+
 })
 
 

@@ -63,16 +63,9 @@ async function handerSubscribed_apps(page_id, access_token) {
   };
   let result = await request(option);
   return JSON.parse(result)
-
 }
 
 
-router.get('/test',async (req, res)=>{
-  let result = await getInforCustomers('EAAGKCb3V9UcBADmWAKEocau3GuMzQDZAZAy7SMzDRXgWJHzlFRsuguw3ZAZBTr6Rl7MKyDKysf3Jr4nLjbFyOWEsCdl6wJXc4QD3etHRJmtaZBuClJrNm5bIMZBEi8GCg0AM3KPfwE2NxnRY0EkFdQa9zLMiEM7mWfQofO1ABNbAZDZD','3064385566992160')
-  res.json({
-    result
-  })
-})
 router.post('/subscribed_apps', async (req, res) => {
   let data = req.body;
   if (!data.page_id || !data.access_token) {
@@ -84,7 +77,8 @@ router.post('/subscribed_apps', async (req, res) => {
     })
   } else {
     try {
-      await handerSubscribed_apps(data.page_id, data.access_token)
+      await handerSubscribed_apps(data.page_id, data.access_token);
+
       res.status(200).json({
         "status": true,
         "code": 200,
@@ -101,6 +95,7 @@ router.post('/subscribed_apps', async (req, res) => {
     }
   }
 })
+
 async function handleGetPageList(user_id, token) {
 
   let url = `https://graph.facebook.com/${user_id}/accounts?fields=picture,name,access_token&access_token=${token}`;
