@@ -31,6 +31,7 @@ router.post('/webhook', async (req, res) => {
   let body = req.body;
   // Checks this is an event from a page subscription
   if (body.object === 'page') {
+    res.status(200).send('EVENT_RECEIVED');
     // Iterates over each entry - there may be multiple if batched
     if (body.entry[0].messaging[0].message) {
       console.log('tin nhắn đến')
@@ -54,10 +55,9 @@ router.post('/webhook', async (req, res) => {
         }
 
       }
-      console.log(PageId)
-      console.log(senderId)
+      // insert new customer when contact page
       let sender = await customersService.getCustomerBySendId(PageId, senderId);
-      console.log(sender)
+
       if (!sender) {
         let customers = await getInforCustomers(PageId, senderId);
         let customer = {
@@ -71,11 +71,22 @@ router.post('/webhook', async (req, res) => {
       }
 
     } else if (body.entry[0].messaging[0].postback) {
+      console.log('post back ', body.entry[0].messaging[0].postback)
+      let PageId = body.entry[0].id;
+      let senderId = body.entry[0].messaging[0].sender.id;
+
+      let id_action = body.entry[0].messaging[0].postback.payload;
+      let action = await botActionService.getactionPosbackById(id_action);
+      let page = await pageService.getPageByid(PageId)
+      if (action && page) {
+        reply(senderId, action, page.access_token)
+      }
+
       // send postback
     }
 
     // Returns a '200 OK' response to all requests
-    res.status(200).send('EVENT_RECEIVED');
+
   } else {
     // Returns a '404 Not Found' if event is not from a page subscription
     res.sendStatus(404);
@@ -86,18 +97,22 @@ router.post('/webhook', async (req, res) => {
 function reply(senderId, message, access_token) {
   var reply;
   var arrayOptions;
+  var buttons
   switch (message.type) {
+    // type text
     case 'text':
       reply = {
         'text': message.reply
       }
       break
+    // type quick
     case 'quick':
-      arrayOptions = message.buttons.split(",").map(e => {
+      buttons = JSON.parse(message.buttons)
+      arrayOptions = buttons.map(e => {
         return {
-          "content_type": "text",
-          "title": e,
-          "payload": "xxx",
+          "content_type": e.text,
+          "title": e.title,
+          "payload": e.payload,
         }
       })
       reply = {
@@ -105,13 +120,24 @@ function reply(senderId, message, access_token) {
         "quick_replies": arrayOptions
       }
       break
-    case 'template':
-      arrayOptions = message.buttons.split(",").map(e => {
-        return {
-          "type": "postback",
-          "title": e,
-          "payload": e,
+
+    case 'generic':
+      buttons = JSON.parse(message.buttons)
+      arrayOptions = buttons.map(e => {
+        if (e.type === 'postback') {
+          return {
+            "type": e.type,
+            "title": e.title,
+            "payload": e.payload,
+          }
+        } else {
+          return {
+            "type": e.type,
+            "title": e.title,
+            "url": e.url,
+          }
         }
+
       })
 
       reply = {
@@ -128,10 +154,13 @@ function reply(senderId, message, access_token) {
           }
         }
       }
-      break
+      break;
   }
   sendMessage(senderId, reply, access_token)
 }
+
+
+// send message 
 function sendMessage(senderId, message, page_token) {
   let body = {
     'url': 'https://graph.facebook.com/v2.6/me/messages',
@@ -153,6 +182,7 @@ function sendMessage(senderId, message, page_token) {
     }
   })
 }
+// get infor customers for new contact
 async function getInforCustomers(page_id, send_id) {
   let page = await pageService.getPageByid(page_id);
   if (page) {
@@ -167,15 +197,39 @@ async function getInforCustomers(page_id, send_id) {
 
 }
 
-router.post('/send-all-customers', async(req, res)=>{
-  let user_id = '1262649734';
-  let page_id = req.body.page_id ;
-  let content = req.body.content ;
 
+router.get('/test', (req, res) => {
 
+  let mess = {
+    "text": "Pick a color:",
+    "quick_replies": [
+      {
+        "content_type": "text",
+        "title": "Red",
+        "payload": "<POSTBACK_PAYLOAD>",
+        "image_url": "http://example.com/img/red.png"
+      }, {
+        "content_type": "text",
+        "title": "Green",
+        "payload": "<POSTBACK_PAYLOAD>",
+        "image_url": "http://example.com/img/green.png"
+      },
+      {
+        "content_type": "text",
+        "title": "white",
+        "payload": "<POSTBACK_PAYLOAD>",
+        "image_url": "http://example.com/img/red.png"
+      }, {
+        "content_type": "text",
+        "title": "Black",
+        "payload": "<POSTBACK_PAYLOAD>",
+        "image_url": "http://example.com/img/green.png"
+      }
+    ]
+  }
+
+  sendMessage('3231693413595497', mess, 'EAAGKCb3V9UcBAF8vM2LmaiMExKq0Od6ypnvXHabZBlvP1AX5f1qhNecOjnRwWUFetFktH6pTzYWE5ovAebhWiA2ZCard0YwIGkdOZCxdy039ZBSoVNkiTyIy0W8tWmUp05e0yNDh0DIggr8E1NQcqcKpnGSMdeZBJrAiG4CcQcgZDZD')
+  res.json({ ok: 'ok' })
 })
-
-
-
 
 module.exports = router;

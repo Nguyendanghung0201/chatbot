@@ -23,11 +23,17 @@ const deleteBotActionById = async (user_id, id) => {
     return await BotActionModel.deleteActionById(user_id, id)
 }
 
+const getactionPosbackById =async (id)=>{
+    return await BotActionModel.getactionPosbackById(id)
+}
+
+
 module.exports = {
     getBotAction: getBotAction,
     createBotAction: createBotAction,
     getBotActionByUser: getBotActionByUser,
     updateBotActionById: updateBotActionById,
     deleteBotActionById: deleteBotActionById,
-    getBotActionToRep: getBotActionToRep
+    getBotActionToRep: getBotActionToRep ,
+    getactionPosbackById : getactionPosbackById
 }

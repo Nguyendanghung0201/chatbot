@@ -20,6 +20,8 @@ module.exports = {
    updateBotActionById : async (user_id , id , action)=>{
       return global.db(table).where('user_id', user_id).andWhere('id', id).update(action)
    },
-   
+   getactionPosbackById : async (id)=>{
+      return global.db(table).where('id', id).first()
+   }
 
 }
