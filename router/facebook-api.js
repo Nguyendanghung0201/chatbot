@@ -34,12 +34,29 @@ router.post('/webhook', async (req, res) => {
     res.status(200).send('EVENT_RECEIVED');
     // Iterates over each entry - there may be multiple if batched
     if (body.entry[0].messaging[0].message) {
-      console.log('tin nhắn đến')
       let PageId = body.entry[0].id;
       let content = body.entry[0].messaging[0].message.text;
       let senderId = body.entry[0].messaging[0].sender.id;
+
       // get bots from page id
       let bots = await BotPageService.getListBotReplyByPage_id(PageId);
+      let sender = await customersService.getCustomerBySendId(PageId, senderId);
+      var infor;
+      if (!sender) {
+        let customers = await getInforCustomers(PageId, senderId);
+        let customer = {
+          page_id: PageId,
+          send_id: senderId,
+          gender: customers.gender ? customers.gender : '',
+          name: customers.last_name,
+          full_name: customers.name,
+          avatar: customers.profile_pic,
+        }
+        infor = customers;
+        await customerService.CreateNewCustomers(customer)
+      } else {
+        infor = sender
+      }
 
       if (bots[0]) {
         // page have bot with chattings
@@ -51,35 +68,23 @@ router.post('/webhook', async (req, res) => {
         let message = await botActionService.getBotActionToRep(replys, content)
         if (message) {
           // reply
-          reply(senderId, message, bots[0].access_token)
+          reply(senderId, message, bots[0].access_token, infor)
         }
 
       }
       // insert new customer when contact page
-      let sender = await customersService.getCustomerBySendId(PageId, senderId);
 
-      if (!sender) {
-        let customers = await getInforCustomers(PageId, senderId);
-        let customer = {
-          page_id: PageId,
-          send_id: senderId,
-          gender: customers.gender ? customers.gender : '',
-          name: customers.name,
-          avatar: customers.profile_pic,
-        }
-        await customerService.CreateNewCustomers(customer)
-      }
 
     } else if (body.entry[0].messaging[0].postback) {
-      console.log('post back ', body.entry[0].messaging[0].postback)
       let PageId = body.entry[0].id;
       let senderId = body.entry[0].messaging[0].sender.id;
 
       let id_action = body.entry[0].messaging[0].postback.payload;
       let action = await botActionService.getactionPosbackById(id_action);
-      let page = await pageService.getPageByid(PageId)
+      let page = await pageService.getPageByid(PageId);
+      let sender = await customersService.getCustomerBySendId(PageId, senderId);
       if (action && page) {
-        reply(senderId, action, page.access_token)
+        reply(senderId, action, page.access_token, sender)
       }
 
       // send postback
@@ -94,15 +99,15 @@ router.post('/webhook', async (req, res) => {
 
 });
 
-function reply(senderId, message, access_token) {
+function reply(senderId, message, access_token, infor) {
   var reply;
   var arrayOptions;
-  var buttons
+  var buttons;
   switch (message.type) {
     // type text
     case 'text':
       reply = {
-        'text': message.reply
+        'text': message.reply.replace('{{name}}', infor.name).replace('{{full_name}}', infor.full_name).replace('{{gender}}', infor.gender == 'male' ? 'anh' : 'chị')
       }
       break
     // type quick
@@ -116,7 +121,7 @@ function reply(senderId, message, access_token) {
         }
       })
       reply = {
-        "text": message.title,
+        "text": message.title.replace('{{name}}', infor.name).replace('{{full_name}}', infor.name).replace('{{gender}}', infor.gender == 'male' ? 'anh' : 'chị'),
         "quick_replies": arrayOptions
       }
       break
@@ -146,7 +151,7 @@ function reply(senderId, message, access_token) {
           "payload": {
             "template_type": "generic",
             "elements": [{
-              "title": message.title,
+              "title": message.title.replace('{{name}}', infor.name).replace('{{full_name}}', infor.name).replace('{{gender}}', infor.gender == 'male' ? 'anh' : 'chị'),
               "subtitle": message.subtitle,
               "image_url": message.images,
               "buttons": arrayOptions

@@ -16,7 +16,7 @@ router.get('/get-list-action', async (req, res) => {
     } catch (e) {
         res.status(200).json({
             "status": false,
-            "code": 680,
+            "code": 700,
             "msg": "error",
             "data": []
         })
@@ -24,11 +24,33 @@ router.get('/get-list-action', async (req, res) => {
 
 })
 
+router.get('/get-action/:id', async (req, res) => {
+    let user_id = '1262649734';
+    let botaction_id = req.params.id;
+    try {
+        let result = await BotActionService.getactionPosbackById(botaction_id);
+        res.status(200).json({
+            "status": true,
+            "code": 200,
+            "msg": "success",
+            "data": result
+        })
+    } catch (e) {
+        res.status(200).json({
+            "status": false,
+            "code": 700,
+            "msg": "error",
+            "data": []
+        })
+    }
+})
+
 router.post('/create-bot-action', async (req, res) => {
     let user_id = '1262649734';
     let action = req.body;
+    action.user_id = user_id;
     try {
-        if (action.receive) {
+        if (action.type) {
             let result = await BotActionService.createBotAction(action)
             res.status(200).json({
                 "status": true,
@@ -39,7 +61,7 @@ router.post('/create-bot-action', async (req, res) => {
         } else {
             res.status(200).json({
                 "status": false,
-                "code": 682,
+                "code": 1012,
                 "msg": "error",
                 "data": []
             })
@@ -48,51 +70,22 @@ router.post('/create-bot-action', async (req, res) => {
     } catch (e) {
         res.status(200).json({
             "status": false,
-            "code": 681,
+            "code": 700,
             "msg": "error",
             "data": []
         })
     }
 })
 
-router.get('/delete-bot-action/:id', async (req, res) => {
-    let user_id = '1262649734';
-    let id = req.params.id;
-    try {
-        if (id) {
-            let result = await BotActionService.deleteBotActionById(user_id, id);
-            res.status(200).json({
-                "status": true,
-                "code": 200,
-                "msg": "success",
-                "data": result
-            })
-        } else {
-            res.status(200).json({
-                "status": false,
-                "code": 681,
-                "msg": "error",
-                "data": []
-            })
-        }
-
-
-    } catch (e) {
-        res.status(200).json({
-            "status": false,
-            "code": 682,
-            "msg": "error",
-            "data": []
-        })
-    }
-})
 
 router.post('/update-bot-action', async (req, res) => {
     let user_id = '1262649734';
     let data = req.body;
+    let id = data.id;
+    delete data.id ;
     try {
-        if (data.id) {
-            let result = await BotActionService.updateBotActionById(user_id, data.id, data.action);
+        if (id) {
+            let result = await BotActionService.updateBotActionById(user_id, id, data);
             res.status(200).json({
                 "status": true,
                 "code": 200,
@@ -102,7 +95,7 @@ router.post('/update-bot-action', async (req, res) => {
         } else {
             res.status(200).json({
                 "status": false,
-                "code": 681,
+                "code": 1013,
                 "msg": "error",
                 "data": []
             })
@@ -111,7 +104,7 @@ router.post('/update-bot-action', async (req, res) => {
     } catch (e) {
         res.status(200).json({
             "status": false,
-            "code": 682,
+            "code": 700,
             "msg": "error",
             "data": []
         })

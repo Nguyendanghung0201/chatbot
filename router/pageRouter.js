@@ -20,7 +20,7 @@ router.get('/list-pages', async (req, res) => {
   } else {
     res.status(200).json({
       "status": false,
-      "code": 500,
+      "code": 1002,
       "msg": "error",
       "data": []
     })
@@ -33,7 +33,7 @@ router.get('/list-pages-by-fb/:id', async (req, res) => {
   if (!fb_id) {
     res.status(200).json({
       "status": false,
-      "code": 404,
+      "code": 1002,
       "msg": "error",
       "data": []
     })
@@ -55,14 +55,14 @@ router.get('/get-infor-page/:id', async (req, res) => {
     if (page) {
       res.status(200).json({
         "status": true,
-        "code": 0,
+        "code": 200,
         "msg": "success",
         "data": [page]
       })
     } else {
       res.status(200).json({
         "status": false,
-        "code": 404,
+        "code": 1004,
         "msg": "error",
         "data": []
       })
@@ -71,7 +71,7 @@ router.get('/get-infor-page/:id', async (req, res) => {
   } else {
     res.status(200).json({
       "status": false,
-      "code": 700,
+      "code": 1003,
       "msg": "error",
       "data": []
     })
@@ -93,7 +93,7 @@ router.post('/add-page-bot', async (req, res) => {
         //  chatbot exits on pages
         res.status(200).json({
           "status": false,
-          "code": 404,
+          "code": 1005,
           "msg": "error",
           "data": []
         })
@@ -110,7 +110,7 @@ router.post('/add-page-bot', async (req, res) => {
     } else {
       res.status(200).json({
         "status": false,
-        "code": 404,
+        "code": 1006,
         "msg": "error",
         "data": []
       })
@@ -118,7 +118,7 @@ router.post('/add-page-bot', async (req, res) => {
   } catch (e) {
     res.status(200).json({
       "status": false,
-      "code": 404,
+      "code": 700,
       "msg": "error",
       "data": []
     })
@@ -141,7 +141,7 @@ router.post('/delete-page-bot', async (req, res) => {
     } else {
       res.status(200).json({
         "status": false,
-        "code": 404,
+        "code": 1007,
         "msg": "error",
         "data": []
       })
@@ -149,7 +149,7 @@ router.post('/delete-page-bot', async (req, res) => {
   } catch (e) {
     res.status(200).json({
       "status": false,
-      "code": 404,
+      "code": 700,
       "msg": "error",
       "data": []
     })
@@ -171,7 +171,7 @@ router.get('/get-list-customers/:id', async (req, res) => {
     } else {
       res.status(200).json({
         "status": false,
-        "code": 408,
+        "code": 1003,
         "msg": "error",
         "data": []
       })
@@ -179,7 +179,7 @@ router.get('/get-list-customers/:id', async (req, res) => {
   } catch (e) {
     res.status(200).json({
       "status": false,
-      "code": 406,
+      "code": 700,
       "msg": "error",
       "data": []
     })
@@ -213,50 +213,61 @@ router.post('/delete-customers', async (req, res) => {
 router.get('/get-list-conversation/:id', async (req, res) => {
   let user_id = '1262649734';
   let page_id = req.params.id;
-  let page = await PageService.getPageByid(page_id);
-  let body = {
-    'url': `https://graph.facebook.com/v8.0/${page_id}/conversations?fields=id,name,senders&limit=100`,
-    qs: {
-      'access_token': page.access_token,
-    },
-    method: 'GET',
+  try {
+    let page = await PageService.getPageByid(page_id);
+    let body = {
+      'url': `https://graph.facebook.com/v8.0/${page_id}/conversations?fields=id,name,senders&limit=100`,
+      qs: {
+        'access_token': page.access_token,
+      },
+      method: 'GET',
 
-  };
+    };
+    // get converrsations of page
+    let result = await request(body);
 
-  let result = await request(body);
-  let customers_Old = JSON.parse(result).data.map((e) => {
-    return {
-      send_id: e.senders.data[0].id,
-      name: e.senders.data[0].name,
-      page_id: page_id
-    }
-  })
-
-  if (customers_Old.length > 0) {
-    let listSender = customers_Old.map(e => {
-      return e.send_id;
+    let customers_Old = JSON.parse(result).data.map((e) => {
+      return {
+        send_id: e.senders.data[0].id,
+        name: e.senders.data[0].name,
+        page_id: page_id
+      }
     })
-    let listCusomer = await customersService.getCustomerByListSendId(listSender);
-    if (customers_Old.length > listCusomer.length) {
-      let listsender = listCusomer.map(e => {
-        return e.send_id
-      })
-      let newCustomer = customers_Old.filter((e) => {
-        if (listsender.includes(e.send_id)) {
-          return false
-        } else {
-          return true
-        }
-      })
+    // customers_Old : customers contact to page before
 
-      if (newCustomer.length) {
-        await customersService.createListCustomer(newCustomer);
-        res.json({
-          "status": true,
-          "code": 200,
-          "msg": "success",
-          "data": ''
+    if (customers_Old.length > 0) {
+      let listSender = customers_Old.map(e => {
+        return e.send_id;
+      })
+      let listCusomer = await customersService.getCustomerByListSendId(listSender);
+      if (customers_Old.length > listCusomer.length) {
+        let listsender = listCusomer.map(e => {
+          return e.send_id
         })
+        let newCustomer = customers_Old.filter((e) => {
+          if (listsender.includes(e.send_id)) {
+            return false
+          } else {
+            return true
+          }
+        })
+        // filter customer exit on db to insert new
+        if (newCustomer.length) {
+          await customersService.createListCustomer(newCustomer);
+          res.json({
+            "status": true,
+            "code": 200,
+            "msg": "success",
+            "data": ''
+          })
+        } else {
+          res.json({
+            "status": true,
+            "code": 200,
+            "msg": "success",
+            "data": ''
+          })
+        }
       } else {
         res.json({
           "status": true,
@@ -273,17 +284,17 @@ router.get('/get-list-conversation/:id', async (req, res) => {
         "data": ''
       })
     }
-  } else {
+  } catch (e) {
     res.json({
-      "status": true,
-      "code": 200,
-      "msg": "success",
+      "status": false,
+      "code": 700,
+      "msg": "error",
       "data": ''
     })
   }
 })
 
-router.get('/send-message', async (req, res) => {
+router.post('/send-message', async (req, res) => {
   let user_id = '1262649734';
   let content = 'hi!! test api' // req.body.content;
   let listpage = ['109203267573632']  // req.body.pages;
@@ -317,7 +328,7 @@ router.get('/send-message', async (req, res) => {
     }).catch(reason => {
       res.json({
         "status": false,
-        "code": 505,
+        "code": 700,
         "msg": "error",
         "data": reason
       })

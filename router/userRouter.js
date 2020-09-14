@@ -12,7 +12,7 @@ router.post('/create-account-fb', async (req, res) => {
     if (!user.user_id || !user.fb_id || !user.access_token) {
       res.status(200).json({
         "status": false,
-        "code": 601,
+        "code": 1000, 
         "msg": "error",
         "data": []
       })
@@ -32,7 +32,7 @@ router.post('/create-account-fb', async (req, res) => {
     console.log(e)
     res.json({
       "status": false,
-      "code": 501,
+      "code": 700,
       "msg": "error",
       "data": []
     })
@@ -71,7 +71,7 @@ router.post('/subscribed_apps', async (req, res) => {
   if (!data.page_id || !data.access_token) {
     res.status(200).json({
       "status": false,
-      "code": 500,
+      "code": 1001,
       "msg": "error",
       "data": []
     })
@@ -88,7 +88,7 @@ router.post('/subscribed_apps', async (req, res) => {
     } catch (e) {
       res.status(200).json({
         "status": false,
-        "code": 500,
+        "code": 700,
         "msg": "error",
         "data": ''
       })
@@ -147,7 +147,7 @@ router.get('/get-list-account-fb', async (req, res) => {
   if (!id) {
     res.json({
       "status": false,
-      "code": 601,
+      "code": 1002,
       "msg": "error",
       "data": ''
     })

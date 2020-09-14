@@ -12,7 +12,7 @@ router.post('/create-bot', async (req, res) => {
         if (!user_id || !botname) {
             res.status(200).json({
                 "status": false,
-                "code": 660,
+                "code": 1008,
                 "msg": "error",
                 "data": []
             })
@@ -25,7 +25,7 @@ router.post('/create-bot', async (req, res) => {
             if (result === false) {
                 res.status(200).json({
                     "status": false,
-                    "code": 661,
+                    "code": 1009,
                     "msg": "error",
                     "data": []
                 })
@@ -41,7 +41,7 @@ router.post('/create-bot', async (req, res) => {
     } catch (e) {
         res.status(200).json({
             "status": false,
-            "code": 664,
+            "code": 700,
             "msg": "error",
             "data": []
         })
@@ -56,7 +56,7 @@ router.get('/delete-bot/:id', async (req, res) => {
         if (!bot) {
             res.status(200).json({
                 "status": false,
-                "code": 663,
+                "code": 1010,
                 "msg": "error",
                 "data": []
             })
@@ -74,7 +74,7 @@ router.get('/delete-bot/:id', async (req, res) => {
         console.log(e)
         res.status(200).json({
             "status": false,
-            "code": 404,
+            "code": 700,
             "msg": "error",
             "data": []
         })
@@ -89,7 +89,7 @@ router.get('/get-infor-bot/:id', async (req, res) => {
         if (!bot_id) {
             res.status(200).json({
                 "status": false,
-                "code": 663,
+                "code": 1010,
                 "msg": "error",
                 "data": []
             })
@@ -98,7 +98,7 @@ router.get('/get-infor-bot/:id', async (req, res) => {
             if (!bot) {
                 res.status(200).json({
                     "status": false,
-                    "code": 664,
+                    "code": 1011,
                     "msg": "error",
                     "data": bot
                 })
@@ -109,7 +109,7 @@ router.get('/get-infor-bot/:id', async (req, res) => {
                         "status": true,
                         "code": 200,
                         "msg": "success",
-                        "data": bot
+                        "data": { bot }
                     })
                 } else {
                     let actionBot = await BotActionService.getBotAction(action);
@@ -126,7 +126,7 @@ router.get('/get-infor-bot/:id', async (req, res) => {
         console.log(e)
         res.status(200).json({
             "status": false,
-            "code": 665,
+            "code": 700,
             "msg": "error",
             "data": []
         })
@@ -146,7 +146,7 @@ router.post('/update-bot', async (req, res) => {
     } catch (e) {
         res.status(200).json({
             "status": false,
-            "code": 666,
+            "code": 700,
             "msg": "error",
             "data": []
         })
@@ -154,9 +154,9 @@ router.post('/update-bot', async (req, res) => {
 
 })
 
-router.get('/list-bot', async(req, res)=>{
+router.get('/list-bot', async (req, res) => {
     let user_id = '1262649734';
-    try{
+    try {
         let result = await BotService.getAllBotByUser(user_id);
         res.status(200).json({
             "status": true,
@@ -165,10 +165,10 @@ router.get('/list-bot', async(req, res)=>{
             "data": result
         })
 
-    }catch(e){
+    } catch (e) {
         res.status(200).json({
             "status": false,
-            "code": 666,
+            "code": 700,
             "msg": "error",
             "data": []
         })
