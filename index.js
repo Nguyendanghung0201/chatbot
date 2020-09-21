@@ -102,7 +102,6 @@ app.post('/create-bot-template', upload.single('template'), async (req, res) => 
     user_id : '1262649734'
   }
   if (req.file && action.receive && action.buttons && action.type) {
-    console.log(action)
     await botActionService.createBotAction(action)
     res.json({
       "status": true,
@@ -121,11 +120,6 @@ app.post('/create-bot-template', upload.single('template'), async (req, res) => 
 
 })
 
-
-// catch 404 and forward to error handler
-
-
-// Đây là function dùng api của facebook để gửi tin nhắn
 
 app.set('port', process.env.PORT || 8080);
 app.set('ip', process.env.IP || "0.0.0.0");

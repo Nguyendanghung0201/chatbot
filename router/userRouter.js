@@ -12,7 +12,7 @@ router.post('/create-account-fb', async (req, res) => {
     if (!user.user_id || !user.fb_id || !user.access_token) {
       res.status(200).json({
         "status": false,
-        "code": 1000, 
+        "code": 1000,
         "msg": "error",
         "data": []
       })
@@ -53,13 +53,11 @@ async function handleToken(shortToken) {
 }
 
 async function handerSubscribed_apps(page_id, access_token) {
-  let url = `https://graph.facebook.com/v2.11/${page_id}/subscribed_apps?subscribed_fields=messages,messaging_postbacks`;
+  let url = `https://graph.facebook.com/${page_id}/subscribed_apps?subscribed_fields=messages,messaging_postbacks&access_token=${access_token}`;
   const option = {
-    method: 'GET',
+    method: 'POST',
     uri: url,
-    qs: {
-      access_token: access_token
-    }
+    
   };
   let result = await request(option);
   return JSON.parse(result)
@@ -67,8 +65,9 @@ async function handerSubscribed_apps(page_id, access_token) {
 
 
 router.post('/subscribed_apps', async (req, res) => {
+  
   let data = req.body;
-  if (!data.page_id || !data.access_token) {
+  if (!data.page_id) {
     res.status(200).json({
       "status": false,
       "code": 1001,
@@ -77,15 +76,28 @@ router.post('/subscribed_apps', async (req, res) => {
     })
   } else {
     try {
-      await handerSubscribed_apps(data.page_id, data.access_token);
+    
+      let page = await pageService.getpageBypage_id(data.page_id)
+      if (page) {
+        await handerSubscribed_apps(data.page_id, page.access_token);
+        await pageService.updatePageBypage_id(data.page_id, 1)
+        res.status(200).json({
+          "status": true,
+          "code": 200,
+          "msg": "success",
+          "data": ''
+        })
+      } else {
+        res.status(200).json({
+          "status": false,
+          "code": 1015,
+          "msg": "error",
+          "data": ''
+        })
+      }
 
-      res.status(200).json({
-        "status": true,
-        "code": 200,
-        "msg": "success",
-        "data": ''
-      })
     } catch (e) {
+      console.log(e)
       res.status(200).json({
         "status": false,
         "code": 700,
@@ -109,12 +121,13 @@ async function handleGetPageList(user_id, token) {
       page_id: e.id,
       avt: e.picture.data.url,
       access_token: e.access_token,
-      status: 1,
+      status: 2,
       name: e.name,
       user_id: user_id
     }
 
   });
+  
   if (pages.length > 0) {
     let dataPage = await pageService.getPageByFbAccount(user_id);
     let listPageExits = dataPage.map(e => {
@@ -127,6 +140,10 @@ async function handleGetPageList(user_id, token) {
         return true
       }
     })
+    let listpageupdate = pages.map(e=>{
+      return e.page_id
+    })
+    await pageService.updateCreateFresherAccount(listpageupdate,user_id )
     if (newPage.length > 0) {
 
       if (newPage.length === 1) {
@@ -167,7 +184,6 @@ router.get('/test', async (req, res) => {
     'res': resd
   })
 })
-
 
 
 module.exports = router;

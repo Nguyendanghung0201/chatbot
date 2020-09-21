@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var BotService = require('../controller/bot/bot-service');
 var BotActionService = require('../controller/bot-action/bot-action-service');
+const botActionService = require('../controller/bot-action/bot-action-service');
 
 
 router.post('/create-bot', async (req, res) => {
@@ -19,7 +20,8 @@ router.post('/create-bot', async (req, res) => {
         } else {
             let bot = {
                 user_id,
-                botname
+                botname,
+                botaction_id: data.botaction_id
             }
             let result = await BotService.createNewBot(bot);
             if (result === false) {
@@ -48,39 +50,6 @@ router.post('/create-bot', async (req, res) => {
     }
 
 })
-
-router.get('/delete-bot/:id', async (req, res) => {
-    let user_id = "1262649734";
-    let bot = req.params.id;
-    try {
-        if (!bot) {
-            res.status(200).json({
-                "status": false,
-                "code": 1010,
-                "msg": "error",
-                "data": []
-            })
-        } else {
-            let result = await BotService.deleteBotByUser(user_id, bot)
-            res.status(200).json({
-                "status": true,
-                "code": 200,
-                "msg": "success",
-                "data": [result]
-            })
-        }
-
-    } catch (e) {
-        console.log(e)
-        res.status(200).json({
-            "status": false,
-            "code": 700,
-            "msg": "error",
-            "data": []
-        })
-    }
-})
-
 
 router.get('/get-infor-bot/:id', async (req, res) => {
     let user_id = '1262649734';
@@ -123,7 +92,6 @@ router.get('/get-infor-bot/:id', async (req, res) => {
             }
         }
     } catch (e) {
-        console.log(e)
         res.status(200).json({
             "status": false,
             "code": 700,
@@ -135,8 +103,10 @@ router.get('/get-infor-bot/:id', async (req, res) => {
 router.post('/update-bot', async (req, res) => {
     let user_id = '1262649734';
     let bot = req.body;
+    let id = bot.id;
+    delete bot.id;
     try {
-        let result = await BotService.updateBotById(user_id, bot.id, bot.infor)
+        let result = await BotService.updateBotById(user_id, id, bot)
         res.status(200).json({
             "status": true,
             "code": 200,
@@ -158,12 +128,24 @@ router.get('/list-bot', async (req, res) => {
     let user_id = '1262649734';
     try {
         let result = await BotService.getAllBotByUser(user_id);
-        res.status(200).json({
-            "status": true,
-            "code": 200,
-            "msg": "success",
-            "data": result
+        Promise.all(result.map(async (e) => {
+            let action_id = JSON.parse(e.botaction_id)     
+            let actions = await botActionService.getBotAction(action_id)
+            return {
+                id: e.id,
+                botname: e.botname,
+                botaction_id: actions,
+                status : e.status
+            }
+        })).then(values => {
+            res.status(200).json({
+                "status": true,
+                "code": 200,
+                "msg": "success",
+                "data": values
+            })
         })
+
 
     } catch (e) {
         res.status(200).json({

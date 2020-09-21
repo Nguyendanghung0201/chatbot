@@ -17,7 +17,6 @@ const getBotActionByUser = async (user_id) => {
 }
 
 const updateBotActionById = async (user_id, id, action) => {
-    console.log(user_id, id,action)
     return await BotActionModel.updateBotActionById(user_id, id, action)
 }
 const deleteBotActionById = async (user_id, id) => {

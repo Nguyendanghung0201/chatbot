@@ -29,20 +29,23 @@ router.get('/webhook', (req, res) => {
 });
 router.post('/webhook', async (req, res) => {
   let body = req.body;
+ 
   // Checks this is an event from a page subscription
   if (body.object === 'page') {
     res.status(200).send('EVENT_RECEIVED');
+    console.log('nhan tin nhăn')
     // Iterates over each entry - there may be multiple if batched
-    if (body.entry[0].messaging[0].message) {
+    if (body.entry[0].messaging[0].message && !body.entry[0].messaging[0].message.quick_reply) {
       let PageId = body.entry[0].id;
       let content = body.entry[0].messaging[0].message.text;
       let senderId = body.entry[0].messaging[0].sender.id;
-
+     
       // get bots from page id
       let bots = await BotPageService.getListBotReplyByPage_id(PageId);
       let sender = await customersService.getCustomerBySendId(PageId, senderId);
       var infor;
       if (!sender) {
+      
         let customers = await getInforCustomers(PageId, senderId);
         let customer = {
           page_id: PageId,
@@ -57,8 +60,9 @@ router.post('/webhook', async (req, res) => {
       } else {
         infor = sender
       }
+    
+      if (bots[0] && bots.length > 0) {
 
-      if (bots[0]) {
         // page have bot with chattings
         let replys = [];
         bots.forEach(e => {
@@ -75,15 +79,16 @@ router.post('/webhook', async (req, res) => {
       // insert new customer when contact page
 
 
-    } else if (body.entry[0].messaging[0].postback) {
+    } else if (body.entry[0].messaging[0].postback || body.entry[0].messaging[0].message.quick_reply) {
+    
       let PageId = body.entry[0].id;
       let senderId = body.entry[0].messaging[0].sender.id;
 
-      let id_action = body.entry[0].messaging[0].postback.payload;
+      let id_action = body.entry[0].messaging[0].postback?  body.entry[0].messaging[0].postback.payload : body.entry[0].messaging[0].message.quick_reply.payload;
       let action = await botActionService.getactionPosbackById(id_action);
-      let page = await pageService.getPageByid(PageId);
+      let page = await pageService.getpageBypage_id(PageId);
       let sender = await customersService.getCustomerBySendId(PageId, senderId);
-      if (action && page) {
+      if (action && page && page.status === 1) {
         reply(senderId, action, page.access_token, sender)
       }
 
@@ -107,7 +112,7 @@ function reply(senderId, message, access_token, infor) {
     // type text
     case 'text':
       reply = {
-        'text': message.reply.replace('{{name}}', infor.name).replace('{{full_name}}', infor.full_name).replace('{{gender}}', infor.gender == 'male' ? 'anh' : 'chị')
+        'text': message.reply.replace('{{name}}', infor.name? infor.name : 'bạn').replace('{{full_name}}', infor.full_name ? infor.full_name : 'bạn').replace('{{gender}}', infor.gender ? infor.gender == 'male' ? 'anh' : 'chị' : 'anh/chị')
       }
       break
     // type quick
@@ -115,9 +120,9 @@ function reply(senderId, message, access_token, infor) {
       buttons = JSON.parse(message.buttons)
       arrayOptions = buttons.map(e => {
         return {
-          "content_type": e.text,
-          "title": e.title,
-          "payload": e.payload,
+          "content_type": 'text',
+          "title": e.text,
+          "payload": e.id,
         }
       })
       reply = {
@@ -189,7 +194,7 @@ function sendMessage(senderId, message, page_token) {
 }
 // get infor customers for new contact
 async function getInforCustomers(page_id, send_id) {
-  let page = await pageService.getPageByid(page_id);
+  let page = await pageService.getpageBypage_id(page_id);
   if (page) {
     let url = `https://graph.facebook.com/${send_id}?fields=first_name,gender,name,last_name,profile_pic&access_token=${page.access_token}`;
     const option = {

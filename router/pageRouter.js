@@ -6,6 +6,7 @@ const pageService = require('../controller/page/page-Service');
 var BotPageService = require('../controller/bot-page/bot-page-service');
 const customersService = require('../controller/customers/customers-service');
 const request = require('request-promise');
+const botPageService = require('../controller/bot-page/bot-page-service');
 
 router.get('/list-pages', async (req, res) => {
   let id = '1262649734';
@@ -38,13 +39,27 @@ router.get('/list-pages-by-fb/:id', async (req, res) => {
       "data": []
     })
   } else {
-    let result = await pageService.getPageByFbAccount(fb_id);
+    let listpage = await pageService.getPageByFbAccount(fb_id);
+    if(listpage){
+    let infor = {
+      fb_id : listpage[0].fb_id,
+      username :listpage[0].username ,
+      fb_avt : listpage[0].fb_avt
+    }
     res.status(200).json({
       "status": true,
       "code": 200,
       "msg": "success",
-      "data": result
+      "data": {infor , listpage}
     })
+  }else{
+    res.status(200).json({
+      "status": false,
+      "code": 1020,
+      "msg": "error",
+      "data": ''
+    })
+  }
   }
 })
 
@@ -79,34 +94,52 @@ router.get('/get-infor-page/:id', async (req, res) => {
 })
 
 
-router.post('/add-page-bot', async (req, res) => {
+router.post('/update-page-bot', async (req, res) => {
   let body = req.body;
   let pageId = body.page_id;
-  let bot_id = body.bot_id;
+  let bot_list = body.bot_id;
+
+  let bot_id = bot_list.split(',')
+
   let user_id = '1262649734';
+
   try {
-    let page = await pageService.getPageByid(pageId);
-    let bot = await BotService.getBotById(user_id, bot_id);
-    if (page && bot) {
-      let result = await BotPageService.getChatBotPage(pageId, bot_id);
-      if (result) {
-        //  chatbot exits on pages
-        res.status(200).json({
-          "status": false,
-          "code": 1005,
-          "msg": "error",
-          "data": []
-        })
-      } else {
-        // insert into db
-        let page = await BotPageService.createBotForPage(body);
+    if (pageId) {
+      let result = await BotPageService.getListBotByBot(pageId, bot_id);
+      let bot = result.map(e => {
+        return e.bot_id
+      });
+
+      let newBot = bot_id.filter((e) => {
+        if (bot.includes(parseInt(e)) || e === '') {
+          return false
+        } else {
+          return true
+        }
+      }).map(e => {
+        return {
+          page_id: pageId,
+          bot_id: e
+        }
+      })
+      if (newBot.length > 0) {
+        await botPageService.createBotForPage(newBot)
         res.status(200).json({
           "status": true,
           "code": 200,
-          "msg": "success",
-          "data": page
+          "msg": "error",
+          "data": [newBot]
+        })
+      } else {
+        res.status(200).json({
+          "status": true,
+          "code": 200,
+          "msg": "error",
+          "data": []
         })
       }
+
+
     } else {
       res.status(200).json({
         "status": false,
@@ -125,36 +158,6 @@ router.post('/add-page-bot', async (req, res) => {
   }
 })
 
-router.post('/delete-page-bot', async (req, res) => {
-  let user_id = '1262649734';
-  let page_id = req.body.page_id;
-  let bot_id = req.body.bot_id;
-  try {
-    if (page_id && bot_id) {
-      let result = await BotPageService.deleteChatBotPage(page_id, bot_id)
-      res.status(200).json({
-        "status": true,
-        "code": 200,
-        "msg": "success",
-        "data": result
-      })
-    } else {
-      res.status(200).json({
-        "status": false,
-        "code": 1007,
-        "msg": "error",
-        "data": []
-      })
-    }
-  } catch (e) {
-    res.status(200).json({
-      "status": false,
-      "code": 700,
-      "msg": "error",
-      "data": []
-    })
-  }
-})
 
 router.get('/get-list-customers/:id', async (req, res) => {
   let user_id = '1262649734';
@@ -336,6 +339,37 @@ router.post('/send-message', async (req, res) => {
 
 })
 
+router.post('/update-page', async(req, res) => {
+
+  let page_id = req.body.page_id;
+  let status = req.body.status
+  if (page_id) {
+    let page = await PageService.getpageBypage_id(page_id);
+    if (page) {
+      await pageService.updatePageBypage_id(page_id, status)
+      res.status(200).json({
+        "status": true,
+        "code": 200,
+        "msg": "success",
+        "data": ''
+      })
+    } else {
+      res.status(200).json({
+        "status": false,
+        "code": 1017,
+        "msg": "error",
+        "data": ''
+      })
+    }
+  } else {
+    res.status(200).json({
+      "status": false,
+      "code": 1018,
+      "msg": "error",
+      "data": ''
+    })
+  }
+})
 
 
 module.exports = router;

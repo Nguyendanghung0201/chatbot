@@ -20,6 +20,7 @@
 <body>
     <input type="file" id="img" name="img" />
     <button onclick="upload()">upload images</button>
+    <button onclick="test()">test images</button>
 </body>
 <script>
 
@@ -74,6 +75,23 @@
      // 1011 : bot ko tồn tại
      // 1012 : action ko có type
      // 1013 : bot action trống
+     test =()=>{
+         fetch('http://localhost:8080/page/update-page-bot', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // 'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: JSON.stringify({
+                page_id: '104025921447901',
+                bot_id : [1]
+            }),
+
+        }).then(res => res.json())
+            .then(data => {
+                console.log(data)
+            })
+     }
 
 </script>
 
